@@ -14,3 +14,4 @@ docs/
 .env
 .env.save
 broadcast/
+.env.save
