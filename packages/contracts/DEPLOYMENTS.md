@@ -8,4 +8,13 @@
   - Owner: 0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53
 - UniswapV3Adapter: 0x7A06A2456C52Ba3D2EcA230A27A74662d53BE258
 - Swap proof (WETH→USDC) tx: 0xc9b5e78847247739e5969ebe63d66556963461924da91187161724b4169cd217
+### Token deployment (Base mainnet, chainId 8453)
+- SIMMA token: 0x5DD41109A63ceF816F9A92392593963F752A7254
+  - Owner: 0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53
+  - Total supply: 1,000,000,000 SIMMA (18 decimals)
+- Team VestingWallet: 0x1A29C9728D8C34A3ceB473DeDE8A56775E301317
+  - Funded: 200,000,000 SIMMA (20%)
+- Strategic VestingWallet: 0x406Fe1bDF11D8E6fE9A9e7Dc8F93908844793105
+  - Funded: 200,000,000 SIMMA (20%)
+- Broadcast: packages/contracts/broadcast/DeployToken.s.sol/8453/run-latest.json
 
