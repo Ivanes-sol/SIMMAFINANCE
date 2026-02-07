@@ -7,14 +7,14 @@ import {VestingWallet} from "@openzeppelin/contracts/finance/VestingWallet.sol";
 
 contract DeployToken is Script {
     function run() external {
-        // ---- ENV ----
-        uint256 deployerPk = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.addr(deployerPk);
+        // Keystore-friendly: use the script sender as deployer
+        // IMPORTANT: run forge with --sender set to the same address as your --account keystore
+        address deployer = msg.sender;
 
         // ---- CONFIG (EDIT THESE) ----
-        address treasury = deployer;            // TODO: replace with multisig later
-        address teamBeneficiary = deployer;     // TODO: replace
-        address strategicBeneficiary = deployer;// TODO: replace
+        address treasury = deployer;             // TODO: replace with multisig later
+        address teamBeneficiary = deployer;      // TODO: replace
+        address strategicBeneficiary = deployer; // TODO: replace
 
         uint256 totalSupply = 1_000_000_000 ether; // 1B SIMMA (18 decimals)
 
@@ -33,7 +33,8 @@ contract DeployToken is Script {
         uint64 stratStart = nowTs;
         uint64 stratDuration = uint64(18 * 30 days);
 
-        vm.startBroadcast(deployerPk);
+        // Broadcast using keystore signer (selected by --account) + sender (via --sender)
+        vm.startBroadcast();
 
         // 1) Deploy token
         SIMMA token = new SIMMA(deployer, treasury, totalSupply);
@@ -59,3 +60,4 @@ contract DeployToken is Script {
         console2.log("StrategicVesting:", address(strategicVesting));
     }
 }
+

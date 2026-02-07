@@ -8,12 +8,12 @@ import {UniswapV3Adapter} from "../src/adapters/UniswapV3Adapter.sol";
 
 contract DeployPhase2 is Script {
     function run() external {
-        uint256 pk = vm.envUint("DEPLOYER_PRIVATE_KEY"); // expects 0x... in .env (works with envUint)
-        address owner = vm.addr(pk);
+        address deployer = msg.sender;
+        address owner = deployer;
 
         address router = vm.envAddress("UNISWAP_V3_ROUTER");
 
-        vm.startBroadcast(pk);
+        vm.startBroadcast();
 
         UniswapV3Adapter adapter = new UniswapV3Adapter(owner, router);
         IntentSettlement settlement = new IntentSettlement(owner);

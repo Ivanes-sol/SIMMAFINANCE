@@ -6,11 +6,11 @@ import {UniswapV3Adapter} from "../src/adapters/UniswapV3Adapter.sol";
 
 contract DeployAdapterOnly is Script {
     function run() external {
-        uint256 pk = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address deployer = msg.sender;
         address owner = vm.addr(pk);
         address router = vm.envAddress("UNISWAP_V3_ROUTER");
 
-        vm.startBroadcast(pk);
+        vm.startBroadcast();
         UniswapV3Adapter adapter = new UniswapV3Adapter(owner, router);
         vm.stopBroadcast();
 
