@@ -19,3 +19,15 @@
 ### Vesting schedule sanity
 - Team start: 1801444245, duration: 94608000 (≈3 years after 1y cliff)
 - Strategic start: 1769908245, duration: 46656000 (≈18 months)
+
+### SIMMA token + vesting (Base mainnet, chainId 8453)
+- SIMMA: 0x5DD41109A63ceF816F9A92392593963F752A7254
+  - Deploy tx: 0x054af179f20089ec5206d329ebea0bd33dbb4611c1471f1bdd2fe1408e944b2d
+- Team VestingWallet: 0x1A29C9728D8C34A3ceB473DeDE8A56775E301317
+  - Deploy tx: 0xaee84dcadf0d2f77989749cd2563370f385ccab2489f1d69e866f4e6f6fd0637
+- Strategic VestingWallet: 0x406Fe1bDF11D8E6fE9A9e7Dc8F93908844793105
+  - Deploy tx: 0xb0e5b484dbc2f3df2e6667253150275db0ddfdf103428ca819da8868e7452fea
+- Funding txs:
+  - 0xc5d67a9cb980fc927279db86c2ad0819239ac2f9b0738024cdf2cec7e94d8820
+  - 0xf62c4233489f8843f7b806aad098ba6263cd14e65441ea5f03f5d4814185b536
+- Block: 41857683
