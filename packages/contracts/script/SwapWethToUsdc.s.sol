@@ -27,16 +27,16 @@ contract SwapWethToUsdc is Script {
     );
 
     function run() external {
-        uint256 pk = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address signer = vm.addr(pk);
+        address signer = 0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53;
         // Ensure Settlement can pull WETH from signer
         uint256 amountIn = 0.001 ether;
 
         uint256 allowance = IERC20(WETH).allowance(signer, SETTLEMENT);
         if (allowance < amountIn) {
-        vm.startBroadcast(pk);
+        vm.startBroadcast(signer);
         IERC20(WETH).approve(SETTLEMENT, type(uint256).max);
         vm.stopBroadcast();
+
 }
 
 
@@ -83,14 +83,13 @@ contract SwapWethToUsdc is Script {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         // Sign
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer, digest);
         bytes memory sig = abi.encodePacked(r, s, v);
 
-        vm.startBroadcast(pk);
-
+        vm.startBroadcast(signer);
         uint256 amountOut = IntentSettlement(SETTLEMENT).execute(intent, sig);
-
         vm.stopBroadcast();
+
 
         console2.log("Swap amountOut (raw):", amountOut);
     }
