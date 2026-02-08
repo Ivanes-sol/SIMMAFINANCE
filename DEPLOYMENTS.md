@@ -43,3 +43,7 @@
 - UniswapV3Adapter: 0x7A06A2456C52Ba3D2EcA230A27A74662d53BE258
 - Swap proof (WETH→USDC) tx: 0xff886bf3da4216b6b0d0c77636da067514846f75b33a2ec545b1f1a40e2fd905
 
+### Verification SIMMA 
+- https://basescan.org/address/0xfcb4ac2cb9266e00c44b8e1b872b92a04cd28156#code
+- https://basescan.org/address/0xf397a7adc5eac91a054f530fa1701e8405f0d04d#code
+- https://basescan.org/address/0x4502f0c56587cc258b2d8023d6c07a3dfeeccccc#code
