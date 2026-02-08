@@ -10,3 +10,8 @@
 # secrets
 .env
 **/.env
+
+# Foundry artifacts
+packages/contracts/broadcast/
+packages/contracts/cache/
+packages/contracts/out/
