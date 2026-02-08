@@ -25,3 +25,8 @@ packages/contracts/out/
 packages/contracts/broadcast/
 packages/contracts/cache/
 packages/contracts/out/
+
+# Foundry artifacts (do not commit)
+packages/contracts/broadcast/
+packages/contracts/cache/
+packages/contracts/out/
