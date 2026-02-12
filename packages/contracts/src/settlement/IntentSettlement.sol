@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IAdapter} from "../interfaces/IAdapter.sol";
 import {IERC20Minimal} from "../interfaces/IERC20Minimal.sol";
+import {ISettlementHook} from "../interfaces/ISettlementHook.sol";
 
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -10,6 +11,7 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @notice v1: exact-input only, recipient = signer (msg.sender enforced by signature), allowlisted tokens.
+/// @dev Adds optional hook module; default is zero-address (no hook).
 contract IntentSettlement is EIP712, Ownable2Step {
     using ECDSA for bytes32;
 
@@ -25,6 +27,9 @@ contract IntentSettlement is EIP712, Ownable2Step {
     event TokenAllowlistSet(address token, bool allowed);
     event AdapterAllowlistSet(address adapter, bool allowed);
     event FeeBpsSet(uint16 feeBps, address feeRecipient);
+
+    /// @notice Optional hook address changed (0x0 disables hooks)
+    event HookSet(address hook);
 
     event IntentExecuted(
         address indexed signer,
@@ -46,6 +51,9 @@ contract IntentSettlement is EIP712, Ownable2Step {
     // fee on output token
     uint16 public feeBps; // e.g. 30 = 0.30%
     address public feeRecipient;
+
+    /// @notice Optional hook module (can be 0x0)
+    ISettlementHook public hook;
 
     // ---- Types ----
     struct SwapIntent {
@@ -87,6 +95,12 @@ contract IntentSettlement is EIP712, Ownable2Step {
         emit FeeBpsSet(_feeBps, _feeRecipient);
     }
 
+    /// @notice Set optional settlement hook (0x0 disables)
+    function setHook(address _hook) external onlyOwner {
+        hook = ISettlementHook(_hook);
+        emit HookSet(_hook);
+    }
+
     // ---- Core ----
     function execute(SwapIntent calldata intent, bytes calldata signature) external returns (uint256 amountOut) {
         // v1 receiver constraint
@@ -122,6 +136,20 @@ contract IntentSettlement is EIP712, Ownable2Step {
         // Mark nonce used
         nonceUsed[intent.signer][intent.nonce] = true;
 
+        // Optional hook (pre)
+        if (address(hook) != address(0)) {
+            hook.beforeExecute(
+            intent.signer,
+            intent.adapter,
+            intent.tokenIn,
+            intent.tokenOut,
+            intent.amountIn,
+            intent.minAmountOut,
+            intent.nonce
+           );
+
+        }
+
         // Pull tokenIn from signer to this contract
         _safeTransferFrom(intent.tokenIn, intent.signer, address(this), intent.amountIn);
 
@@ -148,6 +176,20 @@ contract IntentSettlement is EIP712, Ownable2Step {
             if (feePaid != 0) {
                 _safeTransferFrom(intent.tokenOut, intent.signer, feeRecipient, feePaid);
             }
+        }
+
+        // Optional hook (post)
+        if (address(hook) != address(0)) {
+            hook.beforeExecute(
+            intent.signer,
+            intent.adapter,
+            intent.tokenIn,
+            intent.tokenOut,
+            intent.amountIn,
+            intent.minAmountOut,
+            intent.nonce
+            );
+
         }
 
         emit IntentExecuted(
@@ -180,3 +222,4 @@ contract IntentSettlement is EIP712, Ownable2Step {
         require(ok && (data.length == 0 || abi.decode(data, (bool))), "transferFrom failed");
     }
 }
+
