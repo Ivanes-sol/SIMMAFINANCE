@@ -15,7 +15,7 @@ export const base = {
 
   // Protocol (existing)
   IntentSettlement: "0x7bC94a08f7d9E277856EFF692EA3A67FAadB35DA",
-  UniswapV3Adapter: "0x7A06A2456C52Ba3D2EcA230A27A74662d53BE258",
+  UniswapV3Adapter: "0xf7ab3d2cA8666034Ae9746E3CFee44b6EFFe50F0",
   UniversalRouter:  "0x198EF79F1F515F02dFE9e3115eD9fC07183f02fC",
   Owner:            "0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53",
 } as const;
