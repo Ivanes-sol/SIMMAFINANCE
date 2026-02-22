@@ -65,3 +65,21 @@
   - fee: `3000`
   - ticks: `[-887220, 887220]` (full-range)
   - position liquidity: `1000000000000000054`
+### Pools (Uniswap V3) + Initial Liquidity
+
+#### SIMMA/WETH (fee 0.3%)
+- Factory createPool tx: `0x98fd1e2ffbe6ddf45c6514789d0a330eba87e9eee320184334f4e2f3b82ddba1`
+- Pool: `0xFb378d2B4C2680cC8E9c1d537d07ed8456C65A77`
+  - token0: WETH `0x4200000000000000000000000000000000000006`
+  - token1: SIMMA `0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156`
+  - fee: `3000`
+- LP NFT (PositionManager): `4680814`
+  - Owner: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+
+#### SIMMA/USDC (fee 0.3%)
+- Pool: `<PASTE_POOL_SU_HERE>`
+  - token0: USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+  - token1: SIMMA `0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156`
+  - fee: `3000`
+- LP NFT (PositionManager): `4681018`
+  - Owner: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
