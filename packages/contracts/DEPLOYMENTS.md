@@ -38,3 +38,30 @@
 - WETH (Base): `0x4200000000000000000000000000000000000006`
 - USDC (Base): `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - SIMMA: `0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156`
+### Uniswap V3 Pools
+- SIMMA/WETH 0.30% (fee=3000): `0xFb378d2B4C2680cC8E9c1d537d07ed8456C65A77`
+  - Factory createPool tx: `0x98fd1e2ffbe6ddf45c6514789d0a330eba87e9eee320184334f4e2f3b82ddba1`
+  - token0 (WETH): `0x4200000000000000000000000000000000000006`
+  - token1 (SIMMA): `0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156`
+  - initialize sqrtPriceX96: `79228162514264337593543950336000` (tick ≈ 138162, price 1 WETH = 1,000,000 SIMMA)
+  - NPM: `0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1`
+  - initial mint tx: `<PASTE_MINT_TX_HASH>`
+  - tick range: `[132120, 144120]`
+  - seeded: `0.10 WETH` + `100,000 SIMMA` (adjust if different)
+
+### Uniswap V3 Liquidity Pool(Base)
+
+- SIMMA/WETH V3 pool (0.30%): `0xFb378d2B4C2680cC8E9c1d537d07ed8456C65A77`
+  - token0 (WETH): `0x4200000000000000000000000000000000000006`
+  - token1 (SIMMA): `0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156`
+  - initial seed balances (pool):
+    - WETH: `1000000000000000` (0.001)
+    - SIMMA: `1000000000000000054000` (~1000)
+  - pool liquidity(): `1000000000000000054`
+### 
+- LP NFT (NonfungiblePositionManager): `0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1`
+  - tokenId: `4680814`
+  - owner: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+  - fee: `3000`
+  - ticks: `[-887220, 887220]` (full-range)
+  - position liquidity: `1000000000000000054`
