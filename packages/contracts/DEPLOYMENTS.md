@@ -18,3 +18,23 @@
   - Funded: 200,000,000 SIMMA (20%)
 - Broadcast: packages/contracts/broadcast/DeployToken.s.sol/8453/run-latest.json
 
+### Core (IntentSettlement v1 + hook-enabled)
+- IntentSettlement (hook-enabled): `0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b`
+  - Deploy tx: `0xcd214bb940f65569c9aa4a31742f3d35b0dcee6df4693675a69e1afc7840f362`
+  - Owner: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+  - Fee: `30` bps
+  - Fee recipient: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+  - Hook: `0x87ADa5e12c7D7396982BC4BF5034f358f3FE92E0` (NoopSettlementHook)
+
+### Adapters
+- UniswapV3Adapter (Universal Router wired): `0x631B038B3Cf7Ac5f513dC74750345E48beceBCC0`
+  - Universal Router (Base): `0x198EF79F1F515F02dFE9e3115eD9fC07183f02fC`
+
+### Hooks
+- NoopSettlementHook: `0x87ADa5e12c7D7396982BC4BF5034f358f3FE92E0`
+  - Deploy tx: `0x1c0ad11c19317fb507069d1b523ad07ab92c6320a6a6daa4b9eb8f422ee2c720`
+
+### Tokens
+- WETH (Base): `0x4200000000000000000000000000000000000006`
+- USDC (Base): `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- SIMMA: `0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156`
