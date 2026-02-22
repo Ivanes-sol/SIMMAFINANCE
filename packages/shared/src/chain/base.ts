@@ -14,7 +14,7 @@ export const base = {
   StrategicVesting: "0x4502F0c56587Cc258b2d8023d6c07a3dfeeCcCCc",
 
   // Protocol (existing)
-  IntentSettlement: "0x7bC94a08f7d9E277856EFF692EA3A67FAadB35DA",
+  IntentSettlement: "0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b",
   UniswapV3Adapter: "0xf7ab3d2cA8666034Ae9746E3CFee44b6EFFe50F0",
   UniversalRouter:  "0x198EF79F1F515F02dFE9e3115eD9fC07183f02fC",
   Owner:            "0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53",

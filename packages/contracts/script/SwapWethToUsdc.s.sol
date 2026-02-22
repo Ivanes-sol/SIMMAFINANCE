@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
@@ -7,8 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SwapWethToUsdc is Script {
     // Deployed contracts (Base mainnet)
-    address constant SETTLEMENT = 0x7bC94a08f7d9E277856EFF692EA3A67FAadB35DA;
-    address constant ADAPTER = 0x7A06A2456C52Ba3D2EcA230A27A74662d53BE258;
+    address constant SETTLEMENT = 0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b;
+    address constant ADAPTER = 0x631B038B3Cf7Ac5f513dC74750345E48beceBCC0;
 
     // Tokens (Base mainnet)
     address constant WETH = 0x4200000000000000000000000000000000000006;

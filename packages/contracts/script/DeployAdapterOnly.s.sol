@@ -6,14 +6,18 @@ import {UniswapV3Adapter} from "../src/adapters/UniswapV3Adapter.sol";
 
 contract DeployAdapterOnly is Script {
     function run() external {
-        address deployer = msg.sender;
-        address owner = vm.addr(pk);
-        address router = vm.envAddress("UNISWAP_V3_ROUTER");
+        // Keystore-friendly: Foundry will use --sender / --account to sign.
+        address owner = msg.sender;
 
         vm.startBroadcast();
+        address router = vm.envAddress("UNIVERSAL_ROUTER");
         UniswapV3Adapter adapter = new UniswapV3Adapter(owner, router);
+
+
         vm.stopBroadcast();
 
-        console2.log("New UniswapV3Adapter:", address(adapter));
+        console2.log("UniswapV3Adapter:", address(adapter));
+        console2.log("owner:", owner);
     }
 }
+
