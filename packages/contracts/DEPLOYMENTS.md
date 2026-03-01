@@ -133,3 +133,8 @@ Start relayer:
 cd /mnt/c/WINDOWS/SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/simma/packages/relayer
 npm i
 npm run dev
+### Common errors
+
+- `transferFrom failed`: the signer does not have enough `tokenIn` balance for `amountIn` (remember USDC has 6 decimals). Check:
+  - `cast call USDC "balanceOf(address)(uint256)" <signer>`
+  - `cast call USDC "allowance(address,address)(uint256)" <signer> <settlement>`
