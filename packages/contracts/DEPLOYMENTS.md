@@ -25,7 +25,6 @@
   - Deploy tx: `0x1c0ad11c19317fb507069d1b523ad07ab92c6320a6a6daa4b9eb8f422ee2c720`
 
 - UniswapV3Adapter (wired to Universal Router): `0x631B038B3Cf7Ac5f513dC74750345E48beceBCC0`
-
 - Base Universal Router: `0x198EF79F1F515F02dFE9e3115eD9fC07183f02fC`
 
 ### Uniswap V3 Infra (Base)
@@ -91,7 +90,7 @@
 - Event: `IntentExecuted(signer=0x7Ab2..., amountOut=524663, feePaid=1573, nonce=42516854)`
 
 ### B) Relayer v0 (Option A) proof (local signer → relayer → settlement.execute)
-Relayer endpoint: `POST /v1/execute` with `{chainId, intent, signature}`.
+Relayer endpoint: `POST /v1/execute` with `{chainId, intent, signature}`.  
 Relayer signs the tx with relayer key, but **intent signature is from user key**.
 
 - Relayer-executed tx #1:
@@ -124,14 +123,13 @@ Relayer signs the tx with relayer key, but **intent signature is from user key**
 
 ---
 
-## Operational Notes
-
-### RPC hygiene
-- `cast receipt` uses `$BASE_RPC_URL`. Ensure it matches relayer `.env` (`RELAYER_BASE_RPC_URL`).
-- If you see `403 App is inactive` from Alchemy, your env is pointing at an old/deactivated key.
-
 ## Relayer (local) — Intent build → sign → execute (Base mainnet, chainId 8453)
 
 Relayer path:
 - `/mnt/c/WINDOWS/SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/simma/packages/relayer`
 
+Start relayer:
+```bash
+cd /mnt/c/WINDOWS/SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/simma/packages/relayer
+npm i
+npm run dev
