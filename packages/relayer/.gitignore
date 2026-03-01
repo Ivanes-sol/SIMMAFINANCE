@@ -1,0 +1,15 @@
+# secrets
+.env
+.env.*
+
+# runtime state
+data/nonces.json
+data/*.json
+
+# deps
+node_modules/
+
+# misc
+*.log
+.DS_Store
+*.bak.*

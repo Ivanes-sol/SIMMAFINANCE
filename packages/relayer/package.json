@@ -1,0 +1,24 @@
+{
+  "name": "@simma/relayer",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+  "dev": "tsx watch src/index.ts",
+  "typecheck": "tsc -p tsconfig.json --noEmit"
+},  "dependencies": {
+    "@ethereumjs/wallet": "^10.0.0",
+    "@noble/curves": "^2.0.1",
+    "@noble/secp256k1": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "ethereum-cryptography": "^3.2.0",
+    "express": "^4.19.2",
+    "viem": "^2.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
