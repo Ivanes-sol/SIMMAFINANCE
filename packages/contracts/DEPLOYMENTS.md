@@ -31,6 +31,12 @@
 ### Uniswap V3 Infra (Base)
 - NonfungiblePositionManager (NPM): `0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1`
 
+### Relayer v0 (Option A)
+- Local URL: `http://localhost:8787`
+- Relayer EOA (tx sender): `0x01fEEDEaDA06dd6687845609e4790599AB6c6485`
+- Relayer signs the **transaction** to Settlement, but the **intent signature must be from the user/signer**:
+  - User/signer: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+
 ---
 
 ## Uniswap V3 Pools
@@ -59,9 +65,9 @@
 - Mint result (pool took):
   - USDC used: `10000000` (10 USDC)
   - SIMMA used: `6848277114528298915368` (~6848.277 SIMMA)
-- Mint txs (from broadcast run-latest.json):
-  - SIMMA approve NPM: `0x46f68f6b4ec489ad6593615f83ccb7da65608d17b2daf633c9a9e7ef22b8914d`
-  - SIMMA approve NPM (script ordering): `0x999e98f4d6f2df78bf74ec9d5b9cdd491664ef2f5e1337fb399b3aceb26e1adf`
+- Mint txs (from `broadcast/MintSimmaUsdcFullRange.s.sol/8453/run-latest.json`):
+  - NPM mint (creates LP NFT #4689379): `0x46f68f6b4ec489ad6593615f83ccb7da65608d17b2daf633c9a9e7ef22b8914d`
+  - SIMMA approve NPM: `0x999e98f4d6f2df78bf74ec9d5b9cdd491664ef2f5e1337fb399b3aceb26e1adf`
   - USDC approve NPM: `0xfbccabb1eaed1b70bf44f40844bae5bfcb0c2c9028ce46ee1b17bd9c6923c47b`
 - LP NFT tokenId minted: `4689379`
 - Post-mint sanity (on-chain reads):
@@ -102,20 +108,30 @@ Relayer signs the tx with relayer key, but **intent signature is from user key**
   - feePaid: `45` (0.000045 USDC)
   - nonce: `571331780`
 
+- Relayer-executed tx #3:
+  - txHash: `0x2e58351a0ad54d8cf228b509482737dec21a6a719a63c61735aecf03819f40cf`
+  - amountIn: `10 SIMMA` (raw `10000000000000000000`)
+  - amountOut: `14997` (0.014997 USDC)
+  - feePaid: `44` (0.000044 USDC)
+  - nonce: `462891481`
+
+- Relayer-executed tx #4:
+  - txHash: `0xbb2ef66a9eef685816f7aa06885f9e3da7a2740b935555fd0c7e63866e96a89c`
+  - amountIn: `10 SIMMA` (raw `10000000000000000000`)
+  - amountOut: `14955` (0.014955 USDC)
+  - feePaid: `44` (0.000044 USDC)
+  - nonce: `370742716`
+
 ---
 
 ## Operational Notes
 
 ### RPC hygiene
-- `cast receipt` uses `$BASE_RPC_URL`. Ensure it matches relayer `.env` (RELAYER_BASE_RPC_URL).
+- `cast receipt` uses `$BASE_RPC_URL`. Ensure it matches relayer `.env` (`RELAYER_BASE_RPC_URL`).
 - If you see `403 App is inactive` from Alchemy, your env is pointing at an old/deactivated key.
 
-### Allowances
-For relayer flow, user must approve Settlement to spend tokenIn:
-- `SIMMA.approve(SETTLEMENT, MaxUint256)` from signer.
+## Relayer (local) — Intent build → sign → execute (Base mainnet, chainId 8453)
 
-### Common sanity commands
-- Pool liquidity:
-  - `cast call --rpc-url "$BASE_RPC_URL" $POOL "liquidity()(uint128)"`
-- Slot0:
-  - `cast call --rpc-url "$BASE_RPC_URL" $POOL "slot0()(uint160,int24,uint16,uint16,uint16,uint8,bool)"`
+Relayer path:
+- `/mnt/c/WINDOWS/SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/simma/packages/relayer`
+
