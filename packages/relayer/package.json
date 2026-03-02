@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "dev": "tsx watch src/index.ts",
-  "typecheck": "tsc -p tsconfig.json --noEmit"
-},  "dependencies": {
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "indexer": "tsx src/indexIntentExecuted.ts"
+  },
+  "dependencies": {
     "@ethereumjs/wallet": "^10.0.0",
     "@noble/curves": "^2.0.1",
     "@noble/secp256k1": "^3.0.0",

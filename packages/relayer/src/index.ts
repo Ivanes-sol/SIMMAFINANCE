@@ -1,4 +1,6 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
 import express from "express";
 import { z } from "zod";
 
@@ -301,6 +303,7 @@ const settlement = getAddress(env.SETTLEMENT) as `0x${string}`;
 const ttlSeconds = Number(env.INTENT_TTL_SECONDS || "1200");
 const nonceDbPath = env.NONCE_DB_PATH || "./data/nonces.json";
 const nonceStore = new NonceStore(nonceDbPath, ttlSeconds);
+const intentsDbPath = process.env.INTENTS_DB_PATH || "./data/intents.jsonl";
 
 const ALLOW_ADAPTERS = parseCsvAddrs(env.ALLOWED_ADAPTERS);
 const ALLOW_TOKENS = parseCsvAddrs(env.ALLOWED_TOKENS);
@@ -338,7 +341,45 @@ app.get("/health", async (_req, res) => {
     chainId: 8453,
   });
 });
+// ---------------------------
+// Recent indexed intents (from local jsonl file)
+// GET /v1/recent-intents?limit=50
+// ---------------------------
+app.get("/v1/recent-intents", async (req, res) => {
+  try {
+    const limitRaw = typeof req.query.limit === "string" ? req.query.limit : "50";
+    const limit = Math.max(1, Math.min(500, Number(limitRaw || "50") || 50));
 
+    // if file doesn't exist yet, return empty
+    if (!fs.existsSync(intentsDbPath)) {
+      return sendJson(res, 200, { ok: true, count: 0, intents: [] });
+    }
+
+    const text = fs.readFileSync(intentsDbPath, "utf8");
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+
+    // take last N lines
+    const slice = lines.slice(Math.max(0, lines.length - limit));
+
+    // parse + dedupe by txHash:logIndex (also fixes duplicates from multiple indexer runs)
+    const seen = new Set<string>();
+    const intents: any[] = [];
+    for (let i = slice.length - 1; i >= 0; i--) {
+      try {
+        const obj = JSON.parse(slice[i]);
+        const key = `${obj.txHash}:${obj.logIndex}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        intents.push(obj);
+      } catch {}
+    }
+
+    // return newest-first
+    return sendJson(res, 200, { ok: true, count: intents.length, intents });
+  } catch (e: any) {
+    return sendJson(res, 500, { error: e?.message || String(e) });
+  }
+});
 // ---------------------------
 // Build intent (server-side policy only; client still signs)
 // POST /v1/build-intent
