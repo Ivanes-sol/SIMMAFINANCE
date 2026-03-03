@@ -47,6 +47,27 @@ type SwapIntent = {
 // ---------------------------
 // ABI (minimal)
 // ---------------------------
+const erc20Abi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+] as const;
+
+
 const settlementViewAbi = [
   {
     type: "function",
@@ -340,6 +361,66 @@ app.get("/health", async (_req, res) => {
     settlement,
     chainId: 8453,
   });
+});
+// ---------------------------
+// ---------------------------
+// Balances + allowances (debug UX)
+// GET /v1/balances?signer=0x...
+// ---------------------------
+app.get("/v1/balances", async (req, res) => {
+  try {
+    const signerRaw = typeof req.query.signer === "string" ? req.query.signer : "";
+    if (!isAddress(signerRaw)) {
+      return sendJson(res, 400, { error: "Invalid signer address" });
+    }
+    const signer = getAddress(signerRaw);
+
+    // ALLOW_TOKENS is a Set<string> of checksummed addresses
+    const tokens = Array.from(ALLOW_TOKENS);
+
+    // simple decimals hints for known tokens (purely for UX display)
+    const decimalsHint: Record<string, number> = {
+      [getAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")]: 6,  // USDC
+      [getAddress("0x4200000000000000000000000000000000000006")]: 18, // WETH
+      [getAddress("0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156")]: 18, // SIMMA
+    };
+
+    const out: any[] = [];
+    for (const token of tokens) {
+      const tokenAddr = getAddress(token);
+
+      const bal = (await publicClient.readContract({
+        address: tokenAddr as `0x${string}`,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [signer],
+      })) as bigint;
+
+      const allow = (await publicClient.readContract({
+        address: tokenAddr as `0x${string}`,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [signer, settlement],
+      })) as bigint;
+
+      out.push({
+        token: tokenAddr,
+        decimalsHint: decimalsHint[tokenAddr] ?? null,
+        balance: bal.toString(),
+        allowance: allow.toString(),
+      });
+    }
+
+    return sendJson(res, 200, {
+      ok: true,
+      chainId: 8453,
+      signer,
+      settlement,
+      tokens: out,
+    });
+  } catch (e: any) {
+    return sendJson(res, 500, { error: e?.message || String(e) });
+  }
 });
 // ---------------------------
 // Recent indexed intents (from local jsonl file)
