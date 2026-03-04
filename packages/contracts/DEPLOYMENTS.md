@@ -133,6 +133,20 @@ Start relayer:
 cd /mnt/c/WINDOWS/SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/simma/packages/relayer
 npm i
 npm run dev
+
+### Debug helpers
+
+Balances + allowances for allowlisted tokens (prevents `transferFrom failed` surprises):
+```bash
+curl -s "http://localhost:8787/v1/balances?signer=0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53" | jq
+
+###Save/exit, then commit + push:
+```bash
+cd /mnt/c/WINDOWS/SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/simma
+git add packages/contracts/DEPLOYMENTS.md
+git commit -m "docs: document relayer /v1/balances debug endpoint"
+git push
+
 ### Common errors
 
 - `transferFrom failed`: the signer does not have enough `tokenIn` balance for `amountIn` (remember USDC has 6 decimals). Check:
