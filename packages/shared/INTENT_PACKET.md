@@ -3,7 +3,8 @@
 Chain: Base mainnet (8453)
 
 ## Contracts
-- Settlement: 0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b
+- Settlement (V2, live since 2026-10-09): 0xeF913A73c8279987eE9a5f549593e7029a7Ac48E
+- Settlement V1 (retired, fee-flow bug): 0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b
 - Adapter (UniswapV3Adapter): 0x631B038B3Cf7Ac5f513dC74750345E48beceBCC0
 - Hook: 0x87ADa5e12c7D7396982BC4BF5034f358f3FE92E0 (noop)
 

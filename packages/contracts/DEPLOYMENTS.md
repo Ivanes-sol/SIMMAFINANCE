@@ -14,7 +14,17 @@
 - USDC (Base, 6d): `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 
 ### Core Protocol
-- IntentSettlement (hook-enabled): `0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b`
+- IntentSettlement V2 (LIVE, fee-flow fix): `0xeF913A73c8279987eE9a5f549593e7029a7Ac48E`
+  - Deploy tx: `0x1a579ddbadfe6a648b0e56388ec075dcfbf2a304ef532523e5b71a7bc82fb5b3` (block 52403748)
+  - Owner: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+  - Fee: 30 bps -> `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
+  - Hook: `0x87ADa5e12c7D7396982BC4BF5034f358f3FE92E0` (NoopSettlementHook)
+  - Allowed tokens: USDC, SIMMA, WETH; allowed adapter: `0x631B038B3Cf7Ac5f513dC74750345E48beceBCC0`
+  - Config txs: USDC `0x27b7feb22599bc7115982c3148e105158945129bfb4e9cda2efc2ba0de60fc5f`, SIMMA `0x579c9d57b9a6dfa5b9c238295ddf157da2324986d2f5d9603e603894b710a5ac`, WETH `0xc594b112c2bf227676a74597fbb337ad22908a128b346fe07ce53d5f08d64db6`, adapter `0xcecaf902886a9038a01c92b6f08d829f965418eeb5190d98f4aa9e5c37ce29c2`, fee `0x5dfaba20a69552e5c536f5b4bc1053c350e2eaf8d700501cae38b08ec68459e9`, hook `0x94db95f502d750866f36d5c2cc600c307591f3b3f46916344aea1927104b2cad`
+  - First production swaps: buy `0x1c3968569a7cacdae8d5646ca0a84af48fe1c34bd27f50e17b10c001e7eb4462` (0.1 USDC -> 28.5079 SIMMA, fee 0.0855 SIMMA); sell `0x03b150694b33650d84cd50722729a2cb14445038756ffc250f904d5677bc172f` (100 SIMMA -> 0.348593 USDC, fee 0.001045 USDC)
+  - Users approve tokenIn only; the fee is paid from the settlement's own output balance.
+
+- IntentSettlement V1 (hook-enabled, RETIRED 2026-10-09: pulled fee from signer via transferFrom): `0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b`
   - Deploy tx: `0xcd214bb940f65569c9aa4a31742f3d35b0dcee6df4693675a69e1afc7840f362`
   - Owner: `0x7Ab2EDb61850F8C0E60fd02e462dC169b5f7cb53`
   - Fee: 30 bps

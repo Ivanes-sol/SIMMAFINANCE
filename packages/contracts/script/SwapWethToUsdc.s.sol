@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SwapWethToUsdc is Script {
     // Deployed contracts (Base mainnet)
-    address constant SETTLEMENT = 0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b;
+    address constant SETTLEMENT = 0xeF913A73c8279987eE9a5f549593e7029a7Ac48E;
     address constant ADAPTER = 0x631B038B3Cf7Ac5f513dC74750345E48beceBCC0;
 
     // Tokens (Base mainnet)

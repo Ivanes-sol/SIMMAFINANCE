@@ -10,7 +10,7 @@ interface IERC20 {
 
 contract ApproveSettlement is Script {
     // Base mainnet addresses (from DEPLOYMENTS)
-    address constant SETTLEMENT = 0xf6A316617Ea1C0a1Dde7cB331324d4DAC82E7C4b;
+    address constant SETTLEMENT = 0xeF913A73c8279987eE9a5f549593e7029a7Ac48E;
 
     address constant SIMMA = 0xfcB4Ac2cb9266E00C44B8e1b872B92a04Cd28156;
     address constant USDC  = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
