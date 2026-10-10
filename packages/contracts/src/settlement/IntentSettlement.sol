@@ -9,10 +9,13 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @notice v1: exact-input only, recipient = signer (msg.sender enforced by signature), allowlisted tokens.
-/// @dev Adds optional hook module; default is zero-address (no hook).
-contract IntentSettlement is EIP712, Ownable2Step {
+/// @notice Settlement V2: exact-input only, recipient = signer, allowlisted tokens/adapters.
+/// @dev V2 fee-flow fix: the adapter delivers ALL tokenOut to this contract; the contract then
+///      pays (amountOut - fee) to the signer and the fee to feeRecipient. The signer only ever
+///      approves tokenIn. Optional hook module (0x0 disables).
+contract IntentSettlement is EIP712, Ownable2Step, ReentrancyGuard {
     using ECDSA for bytes32;
 
     // ---- Errors ----
@@ -31,6 +34,7 @@ contract IntentSettlement is EIP712, Ownable2Step {
     /// @notice Optional hook address changed (0x0 disables hooks)
     event HookSet(address hook);
 
+    /// @dev amountOut is the GROSS output received from the adapter (before fee), unchanged from V1.
     event IntentExecuted(
         address indexed signer,
         address indexed adapter,
@@ -57,25 +61,22 @@ contract IntentSettlement is EIP712, Ownable2Step {
 
     // ---- Types ----
     struct SwapIntent {
-        address signer;      // the user
-        address adapter;     // adapter contract
+        address signer; // the user
+        address adapter; // adapter contract
         address tokenIn;
         address tokenOut;
         uint256 amountIn;
         uint256 minAmountOut;
-        uint256 deadline;    // unix seconds
+        uint256 deadline; // unix seconds
         uint256 nonce;
-        bytes   adapterData; // passed to adapter
+        bytes adapterData; // passed to adapter
     }
 
     bytes32 public constant SWAP_INTENT_TYPEHASH = keccak256(
         "SwapIntent(address signer,address adapter,address tokenIn,address tokenOut,uint256 amountIn,uint256 minAmountOut,uint256 deadline,uint256 nonce,bytes32 adapterDataHash)"
     );
 
-    constructor(address initialOwner)
-        EIP712("SimmaIntentSettlement", "1")
-        Ownable(initialOwner)
-    {}
+    constructor(address initialOwner) EIP712("SimmaIntentSettlement", "1") Ownable(initialOwner) {}
 
     // ---- Admin ----
     function setTokenAllowed(address token, bool allowed) external onlyOwner {
@@ -102,9 +103,12 @@ contract IntentSettlement is EIP712, Ownable2Step {
     }
 
     // ---- Core ----
-    function execute(SwapIntent calldata intent, bytes calldata signature) external returns (uint256 amountOut) {
-        // v1 receiver constraint
-        // Recipient is always the signer (NOT arbitrary). Solver can submit tx, but funds go to signer.
+    function execute(SwapIntent calldata intent, bytes calldata signature)
+        external
+        nonReentrant
+        returns (uint256 amountOut)
+    {
+        // Recipient is always the signer (NOT arbitrary). Relayer submits tx, funds go to signer.
         if (block.timestamp > intent.deadline) revert DeadlineExpired(intent.deadline);
 
         if (!tokenAllowed[intent.tokenIn]) revert TokenNotAllowed(intent.tokenIn);
@@ -139,57 +143,59 @@ contract IntentSettlement is EIP712, Ownable2Step {
         // Optional hook (pre)
         if (address(hook) != address(0)) {
             hook.beforeExecute(
-            intent.signer,
-            intent.adapter,
-            intent.tokenIn,
-            intent.tokenOut,
-            intent.amountIn,
-            intent.minAmountOut,
-            intent.nonce
-           );
-
+                intent.signer,
+                intent.adapter,
+                intent.tokenIn,
+                intent.tokenOut,
+                intent.amountIn,
+                intent.minAmountOut,
+                intent.nonce
+            );
         }
 
-        // Pull tokenIn from signer to this contract
+        // Pull tokenIn from signer to this contract (the ONLY approval the signer needs)
         _safeTransferFrom(intent.tokenIn, intent.signer, address(this), intent.amountIn);
 
         // Approve adapter to spend tokenIn
         _safeApprove(intent.tokenIn, intent.adapter, intent.amountIn);
 
-        // Execute via adapter; recipient must be signer (v1)
-        amountOut = IAdapter(intent.adapter).swapExactIn(
-            intent.tokenIn,
-            intent.tokenOut,
-            intent.amountIn,
-            intent.minAmountOut,
-            intent.signer,
-            intent.adapterData
+        // V2: adapter delivers ALL tokenOut to this contract; measure what actually arrived.
+        uint256 outBefore = IERC20Minimal(intent.tokenOut).balanceOf(address(this));
+        IAdapter(intent.adapter).swapExactIn(
+            intent.tokenIn, intent.tokenOut, intent.amountIn, intent.minAmountOut, address(this), intent.adapterData
         );
+        amountOut = IERC20Minimal(intent.tokenOut).balanceOf(address(this)) - outBefore;
 
+        // Slippage on gross output (same semantics as V1 / current frontend quote)
         if (amountOut < intent.minAmountOut) revert Slippage(amountOut, intent.minAmountOut);
 
-        // Fee charged on output token (already delivered to signer).
-        // v1: fee is optional and off by default. If enabled, we collect fee by pulling from signer.
+        // Fee charged on output token, paid out of the contract's own balance.
         uint256 feePaid = 0;
+        uint256 netAmountOut = amountOut;
         if (feeBps != 0 && feeRecipient != address(0)) {
             feePaid = (amountOut * feeBps) / 10_000;
-            if (feePaid != 0) {
-                _safeTransferFrom(intent.tokenOut, intent.signer, feeRecipient, feePaid);
-            }
+            netAmountOut = amountOut - feePaid;
+        }
+
+        if (netAmountOut != 0) {
+            _safeTransfer(intent.tokenOut, intent.signer, netAmountOut);
+        }
+        if (feePaid != 0) {
+            _safeTransfer(intent.tokenOut, feeRecipient, feePaid);
         }
 
         // Optional hook (post)
         if (address(hook) != address(0)) {
-            hook.beforeExecute(
-            intent.signer,
-            intent.adapter,
-            intent.tokenIn,
-            intent.tokenOut,
-            intent.amountIn,
-            intent.minAmountOut,
-            intent.nonce
+            hook.afterExecute(
+                intent.signer,
+                intent.adapter,
+                intent.tokenIn,
+                intent.tokenOut,
+                intent.amountIn,
+                amountOut,
+                feePaid,
+                intent.nonce
             );
-
         }
 
         emit IntentExecuted(
@@ -207,19 +213,22 @@ contract IntentSettlement is EIP712, Ownable2Step {
     // ---- ERC20 helpers (handle non-standard tokens) ----
     function _safeApprove(address token, address spender, uint256 value) internal {
         // Some tokens require setting allowance to 0 before changing it.
-        // We'll do: approve(0) then approve(value).
         (bool ok1, bytes memory d1) = token.call(abi.encodeWithSelector(IERC20Minimal.approve.selector, spender, 0));
         require(ok1 && (d1.length == 0 || abi.decode(d1, (bool))), "approve0 failed");
 
-        (bool ok2, bytes memory d2) = token.call(abi.encodeWithSelector(IERC20Minimal.approve.selector, spender, value));
+        (bool ok2, bytes memory d2) =
+            token.call(abi.encodeWithSelector(IERC20Minimal.approve.selector, spender, value));
         require(ok2 && (d2.length == 0 || abi.decode(d2, (bool))), "approve failed");
     }
 
+    function _safeTransfer(address token, address to, uint256 value) internal {
+        (bool ok, bytes memory data) = token.call(abi.encodeWithSelector(IERC20Minimal.transfer.selector, to, value));
+        require(ok && (data.length == 0 || abi.decode(data, (bool))), "transfer failed");
+    }
+
     function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
-        (bool ok, bytes memory data) = token.call(
-            abi.encodeWithSelector(IERC20Minimal.transferFrom.selector, from, to, value)
-        );
+        (bool ok, bytes memory data) =
+            token.call(abi.encodeWithSelector(IERC20Minimal.transferFrom.selector, from, to, value));
         require(ok && (data.length == 0 || abi.decode(data, (bool))), "transferFrom failed");
     }
 }
-
