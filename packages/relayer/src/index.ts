@@ -3,6 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import express from "express";
 import { z } from "zod";
+import { openDb } from "./db";
+import { SqliteNonceStore } from "./nonces_sqlite";
+import { applyHardening, notFoundHandler, errorHandler } from "./hardening";
 
 import {
   createPublicClient,
@@ -294,6 +297,8 @@ const Env = z.object({
   PORT: z.string().default("8787"),
   RELAYER_BASE_RPC_URL: z.string().url(),
   RELAYER_PK: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+  RELAYER_DB_PATH: z.string().optional(),
+  NONCE_STORE: z.string().optional(),
   SETTLEMENT: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
 
   INTENT_TTL_SECONDS: z.string().optional(),
@@ -308,6 +313,8 @@ const env = Env.parse({
   PORT: process.env.PORT ?? "8787",
   RELAYER_BASE_RPC_URL: process.env.RELAYER_BASE_RPC_URL,
   RELAYER_PK: process.env.RELAYER_PK,
+  RELAYER_DB_PATH: process.env.RELAYER_DB_PATH,
+  NONCE_STORE: process.env.NONCE_STORE,  
   SETTLEMENT: process.env.SETTLEMENT,
 
   INTENT_TTL_SECONDS: process.env.INTENT_TTL_SECONDS,
@@ -322,8 +329,26 @@ const PORT = Number(env.PORT);
 const settlement = getAddress(env.SETTLEMENT) as `0x${string}`;
 
 const ttlSeconds = Number(env.INTENT_TTL_SECONDS || "1200");
+
+// Nonce storage:
+// - default: JSON file (existing behavior)
+// - optional: SQLite (set NONCE_STORE=sqlite)
 const nonceDbPath = env.NONCE_DB_PATH || "./data/nonces.json";
-const nonceStore = new NonceStore(nonceDbPath, ttlSeconds);
+const dbPath = env.RELAYER_DB_PATH || "./data/relayer.db";
+const nonceStoreMode = (env.NONCE_STORE || "json").toLowerCase();
+
+let nonceStore: any = null;
+let db: any = null;
+
+if (nonceStoreMode === "sqlite") {
+  db = openDb(dbPath);
+  nonceStore = new SqliteNonceStore(db, ttlSeconds);
+  console.log("NonceStore: sqlite", dbPath);
+} else {
+  nonceStore = new NonceStore(nonceDbPath, ttlSeconds);
+  console.log("NonceStore: json", nonceDbPath);
+}
+
 const intentsDbPath = process.env.INTENTS_DB_PATH || "./data/intents.jsonl";
 
 const ALLOW_ADAPTERS = parseCsvAddrs(env.ALLOWED_ADAPTERS);
@@ -344,10 +369,45 @@ const walletClient = createWalletClient({
 });
 
 const app = express();
+const allowedOrigins = new Set(
+  [
+    "https://app.simma.finance",
+  ].map((o) => new URL(o).origin)
+);
+
+app.use((req, res, next) => {
+  const rawOrigin = req.headers.origin;
+  const origin =
+    typeof rawOrigin === "string"
+      ? (() => {
+          try {
+            return new URL(rawOrigin).origin;
+          } catch {
+            return rawOrigin;
+          }
+        })()
+      : "";
+
+  const isAllowed = origin && allowedOrigins.has(origin);
+
+  if (isAllowed) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  next();
+});
+
+applyHardening(app);
 app.use(express.json({ limit: "1mb" }));
 
 console.log("RELAYER_BOOT", new Date().toISOString());
-console.log(`Relayer running on http://localhost:${PORT}`);
 console.log("Relayer address:", relayerAccount.address);
 console.log("Settlement:", settlement);
 
@@ -422,15 +482,74 @@ app.get("/v1/balances", async (req, res) => {
     return sendJson(res, 500, { error: e?.message || String(e) });
   }
 });
+
 // ---------------------------
-// Recent indexed intents (from local jsonl file)
+// Indexer status (SQLite kv + intents count)
+// GET /v1/indexer/status
+// ---------------------------
+app.get("/v1/indexer/status", async (_req, res) => {
+  try {
+    const dbPath = process.env.RELAYER_DB_PATH ?? "./data/relayer.db";
+
+    if (!fs.existsSync(dbPath)) {
+      return sendJson(res, 200, {
+        ok: true,
+        dbPath,
+        lastProcessedBlock: null,
+        lastHeartbeatMs: null,
+        intentsCount: 0,
+      });
+    }
+
+    const db = openDb(dbPath);
+
+    const rowBlock = db.stmts.kvGet.get("indexer:lastProcessedBlock") as any;
+    const rowHb = db.stmts.kvGet.get("indexer:lastHeartbeatMs") as any;
+
+    const lastProcessedBlock = rowBlock?.v ? Number(rowBlock.v) : null;
+    const lastHeartbeatMs = rowHb?.v ? Number(rowHb.v) : null;
+
+    const countRow = db.db.prepare("SELECT COUNT(*) as n FROM intents").get() as any;
+    const intentsCount = Number(countRow?.n ?? 0);
+
+    return sendJson(res, 200, {
+      ok: true,
+      dbPath,
+      lastProcessedBlock: Number.isFinite(lastProcessedBlock as any) ? lastProcessedBlock : null,
+      lastHeartbeatMs: Number.isFinite(lastHeartbeatMs as any) ? lastHeartbeatMs : null,
+      intentsCount,
+    });
+  } catch (e: any) {
+    return sendJson(res, 500, { error: e?.message || String(e) });
+  }
+});
+
+// ---------------------------
+// Recent indexed intents
 // GET /v1/recent-intents?limit=50
+// - If RECENTS_STORE=sqlite, read from SQLite (relayer.db)
+// - else fallback to jsonl file
 // ---------------------------
 app.get("/v1/recent-intents", async (req, res) => {
   try {
     const limitRaw = typeof req.query.limit === "string" ? req.query.limit : "50";
     const limit = Math.max(1, Math.min(500, Number(limitRaw || "50") || 50));
 
+    const recentsStore = (process.env.RECENTS_STORE ?? "json").toLowerCase();
+    const dbPath = process.env.RELAYER_DB_PATH ?? "./data/relayer.db";
+
+    if (recentsStore === "sqlite") {
+      // If DB doesn't exist yet, return empty
+      if (!fs.existsSync(dbPath)) {
+        return sendJson(res, 200, { ok: true, count: 0, intents: [] });
+      }
+
+      const db = openDb(dbPath);
+      const intents = db.stmts.intentsRecent.all(limit) as any[];
+      return sendJson(res, 200, { ok: true, count: intents.length, intents });
+    }
+
+    // ---- JSONL fallback (existing behavior) ----
     // if file doesn't exist yet, return empty
     if (!fs.existsSync(intentsDbPath)) {
       return sendJson(res, 200, { ok: true, count: 0, intents: [] });
@@ -461,6 +580,9 @@ app.get("/v1/recent-intents", async (req, res) => {
     return sendJson(res, 500, { error: e?.message || String(e) });
   }
 });
+
+
+
 // ---------------------------
 // Build intent (server-side policy only; client still signs)
 // POST /v1/build-intent
@@ -716,6 +838,11 @@ app.post("/v1/execute", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  // noop
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+const HOST = "127.0.0.1";
+
+app.listen(PORT, HOST, () => {
+  console.log(`Relayer running on http://${HOST}:${PORT}`);
 });
