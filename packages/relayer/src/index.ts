@@ -774,6 +774,22 @@ app.post("/v1/execute", async (req, res) => {
       });
     }
 
+    // ---- Pre-flight: tokenIn balance + allowance (clear error instead of an on-chain revert)
+    try {
+      const [bal, allow] = await Promise.all([
+        publicClient.readContract({ address: intent.tokenIn, abi: erc20Abi, functionName: "balanceOf", args: [intent.signer] }) as Promise<bigint>,
+        publicClient.readContract({ address: intent.tokenIn, abi: erc20Abi, functionName: "allowance", args: [intent.signer, settlement] }) as Promise<bigint>,
+      ]);
+      if (bal < intent.amountIn) {
+        return sendJson(res, 400, { error: "Insufficient balance: the wallet holds less of the input token than the swap amount", balance: bal.toString(), amountIn: intent.amountIn.toString() });
+      }
+      if (allow < intent.amountIn) {
+        return sendJson(res, 400, { error: "Approve needed: the input token is not approved to the settlement contract for this amount", allowance: allow.toString(), amountIn: intent.amountIn.toString(), spender: settlement });
+      }
+    } catch (err: any) {
+      console.error("preflight read failed:", String(err?.shortMessage || err?.message || err).replace(/https?:\/\/\S+/g, "<rpc>"));
+    }
+
     // ---- Execute with relayer wallet
     let txHash: `0x${string}`;
     try {
@@ -784,10 +800,9 @@ app.post("/v1/execute", async (req, res) => {
         args: [intent as any, signature],
       });
     } catch (err: any) {
-      return sendJson(res, 500, {
-        error: "writeContract failed",
-        detail: err?.message || String(err),
-      });
+      const reason = String(err?.shortMessage || err?.details || "unknown error").replace(/https?:\/\/\S+/g, "<rpc>");
+      console.error("execute writeContract failed:", intent.signer, reason);
+      return sendJson(res, 500, { error: `Swap would fail on-chain: ${reason}` });
     }
 
     // Wait receipt
